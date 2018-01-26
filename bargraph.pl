@@ -326,8 +326,10 @@ $extra_gnuplot_cmds = "";
 $use_legend = 1;
 $legendx = 'inside';
 $legendy = 'top';
+$legendspacing = 157;  #lele: use for legend line spacing
 $legend_fill = 'white';
 $legend_outline = 1;
+$legend_horizontal = 0; #lele: flag to control legend horizontal or vertical
 $legend_font_size = 0; # if left at 0 will be $font_size-1
 
 # use patterns instead of solid fills?
@@ -518,10 +520,14 @@ while (<IN>) {
             $legendx = $1;
         } elsif (/^legendy=(\S+)/) {
             $legendy = $1;
+        } elsif (/^legendspacing=(\S+)/) { # lele: specify the line spacing of legend.
+            $legendspacing = $1;
         } elsif (/^legendfill=(.*)/) {
             $legend_fill = $1;
         } elsif (/^=nolegoutline/) {
             $legend_outline = 0;
+        } elsif (/^=legendhorizontal/) { # lele: make legend horizontal
+            $legend_horizontal = 1;
         } elsif (/^legendfontsz=(.+)/) {
             $legend_font_size = $1;
         } elsif (/^extraops=(.*)/) {
@@ -1375,6 +1381,7 @@ $graph_max_y = 0;
 $graph_box_width = 0;
 $graph_box_max_y = 0;
 
+
 my $is_polyline = 0;
 
 $set = -1;
@@ -1605,24 +1612,60 @@ if ($use_legend && $plotcount > 1) {
         $maxlen = $leglen if ($leglen > $maxlen);
     }
     my $border = 50;
-    my $key_box_width = 121;
-    my $key_box_height = 116;
+    #my $border = 150 #lele: more vertical space of border.
+    my $key_box_width = 221;
+    my $key_box_height = 316;
     my $key_text_pre_space = 104;
+    #my $key_text_pre_space = 204;
     #my $key_box_width = 121;
     #my $key_box_height = 116;
     #my $key_text_pre_space = 104;
     # this should really be derived from $legend_text_height
-    my $key_text_line_space = 357;
-    my $legend_width = $border*2 + $key_box_width + $key_text_pre_space +
-        $legend_text_width +
-        $maxlen*&font_bb_diff_x($legend_old_fontsz, $legend_font_size,
+    #my $key_text_line_space = 357;
+    my $key_text_line_space = $legendspacing;
+    my $key_max_width = $border*2  + $key_text_pre_space +
+        $legend_text_width + $maxlen*&font_bb_diff_x($legend_old_fontsz, $legend_font_size,
                                 $legend_text_widest);
-    my $legend_height = $border*2 + $plotcount*$key_text_line_space
-        # subtract off the extra spacing after bottom box
-        - ($key_text_line_space - $key_box_height);
-    # to get text centered where box is, shift from bottom of box
+    my $legend_width = 0;
+    my $legend_height = 0;
+    
+    if ($legend_horizontal){ 
+        
+        $legend_width = $plotcount* ($border*2  + $key_text_pre_space +
+            $legend_text_width +
+            $maxlen*&font_bb_diff_x($legend_old_fontsz, $legend_font_size,
+                                    $legend_text_widest) ); ## lele: reduce width
+        #lele: add more height of legend box
+        $legend_height = $border*2 + $key_text_line_space;
+            # subtract off the extra spacing after bottom box
+            #- ($key_text_line_space - $key_box_height);
+        # to get text centered where box is, shift from bottom of box
+    }else{
+            
+        #my $legend_width = $border*2 + $key_box_width + $key_text_pre_space +
+        #    $legend_text_width +
+        #    $maxlen*&font_bb_diff_x($legend_old_fontsz, $legend_font_size,
+        #                            $legend_text_widest);
+        $legend_width = $border*2  + $key_text_pre_space +
+            $legend_text_width +
+            $maxlen*&font_bb_diff_x($legend_old_fontsz, $legend_font_size,
+                                    $legend_text_widest); ## lele: reduce width
+        #my $legend_height = $border*2 + $plotcount*$key_text_line_space
+            # subtract off the extra spacing after bottom box
+         #   - ($key_text_line_space - $key_box_height);
+        #lele: add more width of legend box
+        $legend_height = $border*2 + $plotcount*$key_text_line_space;
+            # subtract off the extra spacing after bottom box
+            #- ($key_text_line_space - $key_box_height);
+        # to get text centered where box is, shift from bottom of box
+    }
+    
+    print STDERR "key_max_width: $key_max_width\n";
+    print STDERR "legend width: $legend_width\n";
+    print STDERR "legend height: $legend_height\n";
+    
     my $key_text_yshift = -5;
-
+    
     my $ly = $sentinel;
     my $lx = $sentinel;
 
@@ -1705,15 +1748,29 @@ if ($use_legend && $plotcount > 1) {
       
     # draw boxes w/ appropriate colors
     for ($i=0; $i<$plotcount; $i++) {
-        $dy = $i * $key_text_line_space;
-        printf FIG2DEV
-"2 1 0 1 -1 $fillcolor[$i] $legend_depth 0 $fillstyle[$i] 0.000 0 0 0 0 0 5
-\t %d %d %d %d %d %d %d %d %d %d  
-",  $lx+$border, $ly+$border+$key_box_height+$dy, 
-    $lx+$border, $ly+$border+$dy, 
-    $lx+$border+$key_box_width, $ly+$border+$dy,
-    $lx+$border+$key_box_width, $ly+$border+$key_box_height+$dy,
-    $lx+$border, $ly+$border+$key_box_height+$dy;
+        
+        if ($legend_horizontal){
+            $dy = $i * $key_max_width;
+            printf FIG2DEV
+                "2 1 0 1 -1 $fillcolor[$i] $legend_depth 0 $fillstyle[$i] 0.000 0 0 0 0 0 5
+                \t %d %d %d %d %d %d %d %d %d %d  
+                ",  $lx+$border+$dy, $ly+$border+$key_box_height, 
+                    $lx+$border+$dy, $ly+$border, 
+                    $lx+$border+$key_box_width+$dy, $ly+$border,
+                    $lx+$border+$key_box_width+$dy, $ly+$border+$key_box_height,
+                    $lx+$border+$dy, $ly+$border+$key_box_height;
+        }else{
+        
+            $dy = $i * $key_text_line_space;
+            printf FIG2DEV
+                "2 1 0 1 -1 $fillcolor[$i] $legend_depth 0 $fillstyle[$i] 0.000 0 0 0 0 0 5
+                \t %d %d %d %d %d %d %d %d %d %d  
+                ",  $lx+$border, $ly+$border+$key_box_height+$dy, 
+                    $lx+$border, $ly+$border+$dy, 
+                    $lx+$border+$key_box_width, $ly+$border+$dy,
+                    $lx+$border+$key_box_width, $ly+$border+$key_box_height+$dy,
+                    $lx+$border, $ly+$border+$key_box_height+$dy;
+        }
     }
     # legend text
     for ($i=0; $i<$plotcount; $i++) {
@@ -1727,16 +1784,29 @@ if ($use_legend && $plotcount > 1) {
         # for simplicity we give each line the bounds of longest line
         $leglen = length $legend[$legidx];
         $maxlen = $leglen if ($leglen > $maxlen);
-        printf FIG2DEV
-"4 0 0 %d 0 %d %d 0.0000 4 %d %d %d %d %s\\001
-", $legend_depth, $font_face, $legend_font_size,
-$legend_text_height + &font_bb_diff_y($legend_old_fontsz, $legend_font_size),
-$legend_text_width + $leglen*&font_bb_diff_x($legend_old_fontsz, $legend_font_size,
-  $legend[$legidx]),
-$lx+$border+$key_box_width+$key_text_pre_space,
-$ly+$border+$key_box_height+$key_text_yshift+$key_text_line_space*$i,
-$legend[$legidx];
+        
+        if ($legend_horizontal){
+                    printf FIG2DEV
+            "4 0 0 %d 0 %d %d 0.0000 4 %d %d %d %d %s\\001
+            ", $legend_depth, $font_face, $legend_font_size,
+            $legend_text_height + &font_bb_diff_y($legend_old_fontsz, $legend_font_size),
+            $legend_text_width + $leglen*&font_bb_diff_x($legend_old_fontsz, $legend_font_size,
+              $legend[$legidx]),
+            $lx+$border+$key_box_width+$key_text_pre_space+$key_max_width*$i,
+            $ly+$border+$key_box_height+$key_text_yshift,
+            $legend[$legidx];
+        }else{
+                    printf FIG2DEV
+            "4 0 0 %d 0 %d %d 0.0000 4 %d %d %d %d %s\\001
+            ", $legend_depth, $font_face, $legend_font_size,
+            $legend_text_height + &font_bb_diff_y($legend_old_fontsz, $legend_font_size),
+            $legend_text_width + $leglen*&font_bb_diff_x($legend_old_fontsz, $legend_font_size,
+              $legend[$legidx]),
+            $lx+$border+$key_box_width+$key_text_pre_space,
+            $ly+$border+$key_box_height+$key_text_yshift+$key_text_line_space*$i,
+            $legend[$legidx];
     }
+        }
     if ($legend_fill ne '' || $legend_outline) {
         # background fill for legend box
         my $fill_color;
