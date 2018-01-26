@@ -271,6 +271,8 @@ $ylabel = "";
 $usexlabels = 1;
 # xlabel rotation seems to not be supported by gnuplot
 
+$bmargin = 3; #lele: default bmargin
+
 # default is to rotate x tic labels by 90 degrees
 # when tic labels are rotated, need to shift axis label down. -1 is reasonable:
 $xlabelshift = "0,-1";
@@ -530,6 +532,8 @@ while (<IN>) {
             $legend_horizontal = 1;
         } elsif (/^legendfontsz=(.+)/) {
             $legend_font_size = $1;
+        } elsif (/^bmargin=(.+)/) {
+            $bmargin=$1
         } elsif (/^extraops=(.*)/) {
             $extra_gnuplot_cmds .= "$1\n";
         } elsif (/^=nocommas/) {
@@ -1210,6 +1214,12 @@ set format y \"%s\"
 $ylabel, $gnuplot_uses_offset ? "offset " : "", $ylabelshift,
 $xticsopts, $xtics, $yformat;
 # Fix emacs mis-parse: "
+
+#lele: update font and bmargin in gnuplot
+printf GNUPLOT "
+set termoption font ',%s'
+set bmargin %s
+", $font_size, $bmargin;
 
 printf GNUPLOT "
 set boxwidth %s
