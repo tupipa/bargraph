@@ -1597,7 +1597,8 @@ if ($use_legend && $plotcount > 1) {
     # first, compute bounding box of legend
     $legend_text_width -= $legend_prefix_width;
     # default is one smaller than main font so legend not so big
-    $legend_font_size = $font_size - 1 if ($legend_font_size == 0);
+    #$legend_font_size = $font_size - 1 if ($legend_font_size == 0);
+    $legend_font_size = $font_size; # lele
     my $maxlen = 0;
     for ($i=0; $i<$plotcount; $i++) {
         $leglen = length $legend[$i];
@@ -1607,8 +1608,11 @@ if ($use_legend && $plotcount > 1) {
     my $key_box_width = 121;
     my $key_box_height = 116;
     my $key_text_pre_space = 104;
+    #my $key_box_width = 121;
+    #my $key_box_height = 116;
+    #my $key_text_pre_space = 104;
     # this should really be derived from $legend_text_height
-    my $key_text_line_space = 157;
+    my $key_text_line_space = 357;
     my $legend_width = $border*2 + $key_box_width + $key_text_pre_space +
         $legend_text_width +
         $maxlen*&font_bb_diff_x($legend_old_fontsz, $legend_font_size,
